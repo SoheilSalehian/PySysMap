@@ -67,11 +67,17 @@ page. It is not a recursive crawler.
 
 # Deprecated version of argparse
 # @TODO: change to argparser at some point
-from __future__ import unicode_literals
 import optparse
 import sys
 import re
 
+# For randomizing query wait times
+from random import randint, choice
+# For sleeping during queries
+import time
+
+# Global variable to keep track of start citations in order to parse the next page
+nextStart = 0
 
 try:
     # Try importing for Python 3
@@ -349,7 +355,7 @@ class ScholarParser120726(ScholarParser):
 #  articles found are collected in the articles member, a list of Article instances.
 class ScholarQuerier(object):
     SCHOLAR_URL = 'http://scholar.google.com/scholar?hl=en&q=%(query)s+author:%(author)s&btnG=Search&as_subj=eng&as_sdt=1,5&as_ylo=&as_vis=0'
-    NOAUTH_URL = 'http://scholar.google.com/scholar?start=30&q=%(query)s&hl=en&as_sdt=0,5'
+    NOAUTH_URL = 'http://scholar.google.com/scholar?start=%(start)s&q=%(query)s&hl=en&as_sdt=0,5'
     #http://scholar.google.com/scholar?hl=en&q=%(query)s&btnG=Search&as_subj=eng&as_std=1,5&as_ylo=&as_vis=0'
     # Experimental URLs:
     #NOAUTH_URL = 'http://scholar.google.com/scholar?start=10&q=embedded+agile&hl=en&as_sdt=0,5'
@@ -357,7 +363,11 @@ class ScholarQuerier(object):
     # http://scholar.google.com/scholar?q=%s&hl=en&btnG=Search&as_sdt=2001&as_sdtp=on
 
     # Use many different agents to avoid being blocked by google
-    USER_AGENT = 'Mozilla/5.0 (X11; U; FreeBSD i386; en-US; rv:1.9.2.9) Gecko/20100913 Firefox/3.6.9'
+    USER_AGENT = ['Mozilla/5.0 (X11; U; FreeBSD i386; en-US; rv:1.9.2.9) Gecko/20100913 Firefox/3.6.9',\
+                 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1667.0 Safari/537.36',\
+                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2',\
+                 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)',\
+                 'Opera/9.80 (Windows NT 6.0) Presto/2.12.388 Version/12.14']
 
     ## @class Parser(ScholarParser120726)
     #  @brief The class parses the resulting html with inheritance from the parser class aligned 
@@ -398,23 +408,25 @@ class ScholarQuerier(object):
         # Instantiate an opener object based on the list of handlers provided by the HTTPCookieProcessor class
         self.opener = build_opener(HTTPCookieProcessor(self.cjar))
 
-    ## @fn query(self,search)
+    ## @fn query(self,search, start)
     #  @brief This method initiates a query with subsequent parsing of the response.
-    def query(self, search):
+    def query(self, search, start):
         # Flush the articles
         self.clear_articles()
-        # Construct the proper URL
-        url = self.scholar_url % {'query': quote(encode(search)), 'author': quote(self.author)}
+        
+        # Construct the proper URL and calcuate the start
+        url = self.scholar_url % {'query': quote(encode(search)), 'author': quote(self.author),\
+                                  'start': start}
         # Add the agent
         # TODO: need to pick randomly from a list of User-Agents for each query
-        req = Request(url=url, headers={'User-Agent': self.USER_AGENT})
+        req = Request(url=url, headers={'User-Agent': choice(self.USER_AGENT)})
         # Cookie handshake with response from the server
         hdl = self.opener.open(req)
         # Read the contents of the response
         html = hdl.read()
         # Parse the html
         self.parse(html)
-
+    
     ## @fn parse(self,html)
     #  @brief This method allows parsing of existing HTML content
     #  This is done through initiating the parser method of the @class ScholarParser and 
@@ -433,13 +445,15 @@ class ScholarQuerier(object):
     def clear_articles(self):
         self.articles = []
 
+     
 ## @fn txt(query, author, count)
 #  @brief Function that queries and prints the text format 
 def txt(query, author, count):
+    global nextStart
     # Instantiate the querier class with author and count as arguments
     querier = ScholarQuerier(author=author, count=count)
     # Make the actual query
-    querier.query(query)
+    querier.query(query, nextStart)
     # Grab the articles
     articles = querier.articles
     # Setup based on count given to print
@@ -449,9 +463,30 @@ def txt(query, author, count):
     for art in articles:
         print(art.as_txt() + '\n')
 
+## @fn recursiveQueryTxt(query, author, count, recursiveCount)
+#  @brief This function recursively queries and outputs in txt format
+#  The function uses @var recursiveCount which translates to the number of pages that will be queried
+def recursiveQueryTxt(query, author, count, recursiveCount):
+    global nextStart
+    # Recursively do the query based on @var recursiveCount provided
+    for i in xrange(0,recursiveCount):
+        # Txt based query
+        txt(query, author, count)
+        # Random waits between queries
+        time.sleep(randint(4,10))
+        # Set up the nextStart for the next query
+        nextStart += count
+        # Print out messages for future pa
+        print "<scholar> Page:", i+1, "<\scholar>"
+        i += 1
+        
+## @fn csv(query, author, count)
+#  @brief Function that queries and prints the csv format 
 def csv(query, author, count, header=False, sep='|'):
+    global nextStart
     querier = ScholarQuerier(author=author, count=count)
-    querier.query(query)
+    nextStart += count
+    querier.query(query, nextStart)
     articles = querier.articles
     if count > 0:
         articles = articles[:count]
@@ -459,6 +494,23 @@ def csv(query, author, count, header=False, sep='|'):
         result = art.as_csv(header=header, sep=sep)
         print(encode(result))
         header = False
+
+## @fn recursiveQueryCsv(query, author, count, recursiveCount)
+#  @brief This function recursively queries and outputs in csv format
+#  The function uses @var recursiveCount which translates to the number of pages that will be queried
+def recursiveQueryCsv(query, author, count, recursiveCount):
+    global nextStart
+    # Recursively do the query based on @var recursiveCount provided
+    for i in xrange(0,recursiveCount):
+        # Txt based query
+        csv(query, author, count)
+        # Random waits between queries
+        time.sleep(randint(4,10))
+        # Set up the nextStart for the next query
+        nextStart += count
+        # Print out messages for future pa
+        print "<scholar> Page:", i+1, "<\scholar>"
+        i += 1
 
 def main():
     usage = """scholar.py [options] <query string>
@@ -478,6 +530,8 @@ Example: scholar.py -c 1 --txt --author einstein quantum"""
                       help='Print article data in text format')
     parser.add_option('-c', '--count', type='int',
                       help='Maximum number of results')
+    parser.add_option('-p','--pages', type='int',
+                      help='Number of pages to query based')
     parser.set_defaults(count=0, author='')
     options, args = parser.parse_args()
 
@@ -489,11 +543,11 @@ Example: scholar.py -c 1 --txt --author einstein quantum"""
     query = ' '.join(args)
 
     if options.csv:
-        csv(query, author=options.author, count=options.count)
+        recursiveQueryCsv(query, author=options.author, count=options.count, recursiveCount=options.pages)
     elif options.csv_header:
-        csv(query, author=options.author, count=options.count, header=True)
+        recursiveQueryCsv(query, author=options.author, count=options.count, header=True, recursiveCount=options.pages)
     else:
-        txt(query, author=options.author, count=options.count)
+        recursiveQueryTxt(query, author=options.author, count=options.count, recursiveCount=options.pages)
 
     return 0
 
