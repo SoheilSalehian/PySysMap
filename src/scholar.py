@@ -70,6 +70,7 @@ page. It is not a recursive crawler.
 import optparse
 import sys
 import re
+from HTMLParser import HTMLParser
 
 # For randomizing query wait times
 from random import randint, choice
@@ -109,6 +110,21 @@ if sys.version_info[0] == 3:
 else:
     encode = lambda s: s.encode('utf-8') # pylint: disable-msg=C0103
 
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
+
 ## @class Article
 #  @brief A class representing articles listed on Google Scholar.  
 #  The class provides basic dictionary-like behavior
@@ -124,7 +140,8 @@ class Article(object):
                       'num_versions':  [0,    'Versions',       3],
                       'url_citations': [None, 'Citations list', 4],
                       'url_versions':  [None, 'Versions list',  5],
-                      'year':          [None, 'Year',           6]}
+                      'abstract':      [None, 'Abstract',       6],
+                      'year':          [None, 'Year',           6]}                      
     
     ## @fn __getitem__(self,key)
     #  @brief accessor function for the article class
@@ -203,6 +220,7 @@ class ScholarParser(object):
         self.soup = BeautifulSoup(html)
         for div in self.soup.findAll(ScholarParser._tag_checker):
             self._parse_article(div)
+            self._parse_abstract(div)
 
     def _parse_article(self, div):
         self.article = Article()
@@ -215,6 +233,8 @@ class ScholarParser(object):
                     tag.h3 and tag.h3.a:
                 self.article['title'] = ''.join(tag.h3.a.findAll(text=True))
                 self.article['url'] = self._path2url(tag.h3.a['href'])
+                
+
 
             if tag.name == 'font':
                 for tag2 in tag:
@@ -225,7 +245,8 @@ class ScholarParser(object):
 
         if self.article['title']:
             self.handle_article(self.article)
-
+    
+    
     ## @fn _parse_links(self, span)
     ## @brief This function does the actual parsing of the html code at the low level for the links 
     def _parse_links(self, span):
@@ -253,6 +274,8 @@ class ScholarParser(object):
                 # Parse the url path 
                 # TODO: Later download scheme for the smaller window
                 self.article['url_versions'] = self._path2url(tag.get('href'))
+            
+            
 
     ## @fn _tag_ has_class
     #  @brief A predicate static function that checks if tag instance has a class attribute
@@ -267,7 +290,7 @@ class ScholarParser(object):
 
     ## @fn _tag_checker
     #  @brief A static method to allow checking of tags without passing any arguments implicitely
-    #  The method looks at the div tag and calls
+    #  The method looks at the div tag 
     @staticmethod
     def _tag_checker(tag):
         return tag.name == 'div' and ScholarParser._tag_has_class(tag, 'gs_r')
@@ -344,9 +367,26 @@ class ScholarParser120726(ScholarParser):
                 # More html division parsing based on google scholar's div classes
                 if tag.find('div', {'class': 'gs_fl'}):
                     self._parse_links(tag.find('div', {'class': 'gs_fl'}))
+                
+
+                # Parse for the abstract
+                self.article['abstract'] = self._parse_abstract(tag)    
 
         if self.article['title']:
             self.handle_article(self.article)
+            
+    ## @fn _parse_abstract(self, tag)
+    #  @brief This method parses the abstract based on the input with some html tag removal    
+    def _parse_abstract(self, tag):
+        if tag.find('div', {'class': 'gs_rs'}):
+            # Parse the whole html abstract section
+            abstract = ''.join(tag.findAll(text=True))
+            # Strip the unecessary html tags
+            abstract = strip_tags(abstract)
+            # Remove unwanted artifacts
+            abstract = abstract.replace("...", "")
+            abstract = abstract.replace("\n", "")
+            return abstract
 
 ## @class ScholarQuerier(object)
 #  @brief The class parses the resulting html and returns articles to the article class
@@ -477,7 +517,7 @@ def recursiveQueryTxt(query, author, count, recursiveCount):
         # Set up the nextStart for the next query
         nextStart += count
         # Print out messages for future pa
-        print "<scholar> Page:", i+1, "<\scholar>"
+        #print "<scholar> Page:", i+1, "<\scholar>"
         i += 1
         
 ## @fn csv(query, author, count)
@@ -495,21 +535,21 @@ def csv(query, author, count, header=False, sep='|'):
         print(encode(result))
         header = False
 
-## @fn recursiveQueryCsv(query, author, count, recursiveCount)
+## @fn recursiveQueryCsv(query, author, count, recursiveCount, header=False)
 #  @brief This function recursively queries and outputs in csv format
 #  The function uses @var recursiveCount which translates to the number of pages that will be queried
-def recursiveQueryCsv(query, author, count, recursiveCount):
+def recursiveQueryCsv(query, author, count, recursiveCount, header=False):
     global nextStart
     # Recursively do the query based on @var recursiveCount provided
     for i in xrange(0,recursiveCount):
         # Txt based query
-        csv(query, author, count)
+        csv(query, author, header, count)
         # Random waits between queries
         time.sleep(randint(4,10))
         # Set up the nextStart for the next query
         nextStart += count
-        # Print out messages for future pa
-        print "<scholar> Page:", i+1, "<\scholar>"
+        # Print out debug messages 
+        #print "<scholar> Page:", i+1, "<\scholar>"
         i += 1
 
 def main():
@@ -543,9 +583,9 @@ Example: scholar.py -c 1 --txt --author einstein quantum"""
     query = ' '.join(args)
 
     if options.csv:
-        recursiveQueryCsv(query, author=options.author, count=options.count, recursiveCount=options.pages)
+        recursiveQueryCsv(query, author=options.author, count=options.count, recursiveCount=options.pages, header=False)
     elif options.csv_header:
-        recursiveQueryCsv(query, author=options.author, count=options.count, header=True, recursiveCount=options.pages)
+        recursiveQueryCsv(query, author=options.author, count=options.count, recursiveCount=options.pages, header=True)
     else:
         recursiveQueryTxt(query, author=options.author, count=options.count, recursiveCount=options.pages)
 
