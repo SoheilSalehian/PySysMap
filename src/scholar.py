@@ -117,7 +117,7 @@ class MLStripper(HTMLParser):
     def handle_data(self, d):
         self.fed.append(d)
     def get_data(self):
-        return ''.join(self.fed)
+        return '.....'.join(self.fed)
 
 def strip_tags(html):
     s = MLStripper()
@@ -380,12 +380,12 @@ class ScholarParser120726(ScholarParser):
     def _parse_abstract(self, tag):
         if tag.find('div', {'class': 'gs_rs'}):
             # Parse the whole html abstract section
-            abstract = ''.join(tag.findAll(text=True))
+            abstract = tag.find('div', {'class': 'gs_rs'}).text
             # Strip the unecessary html tags
             abstract = strip_tags(abstract)
             # Remove unwanted artifacts
-            abstract = abstract.replace("...", "")
-            abstract = abstract.replace("\n", "")
+            abstract = abstract.replace("...", " ")
+            abstract = abstract.replace("\n", " ")
             return abstract
 
 ## @class ScholarQuerier(object)
@@ -531,7 +531,8 @@ def csv(query, author, count, header=False, sep='|'):
     if count > 0:
         articles = articles[:count]
     for art in articles:
-        result = art.as_csv(header=header, sep=sep)
+        #@FIXME: Hack to disable header csv always
+        result = art.as_csv(header=False, sep=sep)
         print(encode(result))
         header = False
 
