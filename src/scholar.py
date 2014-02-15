@@ -80,6 +80,7 @@ import time
 # Global variable to keep track of start citations in order to parse the next page
 nextStart = 0
 
+
 try:
     # Try importing for Python 3
     # WWW fetch high level interface module
@@ -395,7 +396,7 @@ class ScholarParser120726(ScholarParser):
 #  articles found are collected in the articles member, a list of Article instances.
 class ScholarQuerier(object):
     SCHOLAR_URL = 'http://scholar.google.com/scholar?hl=en&q=%(query)s+author:%(author)s&btnG=Search&as_subj=eng&as_sdt=1,5&as_ylo=&as_vis=0'
-    NOAUTH_URL = 'http://scholar.google.com/scholar?start=%(start)s&q=%(query)s&hl=en&as_sdt=0,5'
+    NOAUTH_URL = 'http://scholar.google.com/scholar?start=%(start)s&q=%(query)s&hl=en&lr=lang_en&as_sdt=0,5'
     #http://scholar.google.com/scholar?hl=en&q=%(query)s&btnG=Search&as_subj=eng&as_std=1,5&as_ylo=&as_vis=0'
     # Experimental URLs:
     #NOAUTH_URL = 'http://scholar.google.com/scholar?start=10&q=embedded+agile&hl=en&as_sdt=0,5'
@@ -457,6 +458,8 @@ class ScholarQuerier(object):
         # Construct the proper URL and calcuate the start
         url = self.scholar_url % {'query': quote(encode(search)), 'author': quote(self.author),\
                                   'start': start}
+        # Debug message
+#        print "[scholar.py] URL:", url
         # Add the agent
         # TODO: need to pick randomly from a list of User-Agents for each query
         req = Request(url=url, headers={'User-Agent': choice(self.USER_AGENT)})
@@ -575,13 +578,15 @@ Example: scholar.py -c 1 --txt --author einstein quantum"""
                       help='Number of pages to query based')
     parser.set_defaults(count=0, author='')
     options, args = parser.parse_args()
-
+    
     # Show help if we have neither keyword search nor author name
     if len(args) == 0 and options.author == '':
         parser.print_help()
         return 1
-
-    query = ' '.join(args)
+    
+    # Added this to comply with how the GS query looks in the address
+    query = '+'.join(args)
+    
 
     if options.csv:
         recursiveQueryCsv(query, author=options.author, count=options.count, recursiveCount=options.pages, header=False)
@@ -594,3 +599,4 @@ Example: scholar.py -c 1 --txt --author einstein quantum"""
 
 if __name__ == "__main__":
     sys.exit(main())
+
