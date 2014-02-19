@@ -78,7 +78,7 @@ from random import randint, choice
 import time
 
 # Global variable to keep track of start citations in order to parse the next page
-nextStart = 0
+nextStart = 1000
 
 
 try:
@@ -516,7 +516,7 @@ def recursiveQueryTxt(query, author, count, recursiveCount):
         # Txt based query
         txt(query, author, count)
         # Random waits between queries
-        time.sleep(randint(4,10))
+        time.sleep(randint(10,60))
         # Set up the nextStart for the next query
         nextStart += count
         # Print out messages for future pa

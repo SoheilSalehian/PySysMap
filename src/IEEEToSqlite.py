@@ -17,10 +17,10 @@ try:
     cursor = connection.cursor()
     
     #Uncomment to drop the table and recreate
-    cursor.executescript('drop table if exists IEEETable;')
+    cursor.executescript('drop table if exists IEEEMetaTable;')
     
     # Create the table to hold scholar data
-    cursor.execute('''CREATE TABLE IF NOT EXISTS IEEETable
+    cursor.execute('''CREATE TABLE IF NOT EXISTS IEEEMetaTable
                       (Document_Title VARCHAR[500],Authors VARCHAR[500],Author_Affiliations VARCHAR[500],Publication_Title VARCHAR[500],\
                        Publication_Date VARCHAR[500],Publication_Year VARCHAR[500],Volume VARCHAR[500],\
                        Issue VARCHAR[500],Start_Page VARCHAR[500],End_Page VARCHAR[500],Abstract VARCHAR[5000],\
@@ -34,14 +34,14 @@ try:
     
 
     # Read the IEEE CSV file with the seperator ","
-    csv_data = csv.reader(open('/home/soheil/workspace/PySysMap/src/Data/IEEE_ESL.csv', "rb"), delimiter=',')
+    csv_data = csv.reader(open('/home/soheil/workspace/PySysMap/src/Data/IEEE_ESL_MetaOnly.csv', "rb"), delimiter=',')
     # Iterate through each article
     for Document_Title,Authors,Author_Affiliations,Publication_Title,Publication_Date,Publication_Year,Volume,Issue,Start_Page,End_Page,\
     Abstract,ISSN,ISBN,EISBN,DOI,PDF_Link,Author_Keywords,IEEE_Terms,INSPEC_Controlled_Terms,INSPEC_Non_Controlled_Terms,\
     DOE_Terms,PACS_Terms,MeSH_Terms,Article_Citation_Count,Patent_Citation_Count,Reference_Count,Copyright_Year,Online_Date,\
     Date_Added_To_Xplore,Meeting_Date,Publisher,Sponsors,Document_Identifier in csv_data:
         
-        cursor.execute("INSERT INTO IEEETable(Document_Title,Authors,Author_Affiliations,Publication_Title,Publication_Date,Publication_Year,Volume,Issue,Start_Page,End_Page,\
+        cursor.execute("INSERT INTO IEEEMetaTable(Document_Title,Authors,Author_Affiliations,Publication_Title,Publication_Date,Publication_Year,Volume,Issue,Start_Page,End_Page,\
                         Abstract,ISSN,ISBN,EISBN,DOI,PDF_Link,Author_Keywords,IEEE_Terms,INSPEC_Controlled_Terms,INSPEC_Non_Controlled_Terms,\
                         DOE_Terms,PACS_Terms,MeSH_Terms,Article_Citation_Count,Patent_Citation_Count,Reference_Count,Copyright_Year,Online_Date,\
                         Date_Added_To_Xplore,Meeting_Date,Publisher,Sponsors,Document_Identifier)\
