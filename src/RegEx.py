@@ -1,6 +1,7 @@
 import sqlite3
 import sys
 import re
+import time
 
 connection = None
 
@@ -17,8 +18,10 @@ def searchQuery(selectExpr, tableExpr, columnExpr, regEx):
     data=cursor.fetchall()
     print(data)
     
+    
 
 try:
+    t = time.time()
     # Connect to the database
     connection = sqlite3.connect('PySysMapDB.db')
     # Create the regex function map for sqlite
@@ -26,31 +29,33 @@ try:
     cursor = connection.cursor()
     data = {}
     
+    # IEEE Data only
+    cursor.execute('SELECT Document_Title, PDF_Link, Abstract, Publication_Year FROM IEEETable WHERE Document_Title REGEXP ? or Abstract REGEXP ?',
+                   ['synthesis' or 'high level synthesis', 'design exploration' and 'synthesis' or 'high level synthesis' or 'HLS'])
+    data['IEEEHLS'] = cursor.fetchall()
     
-    cursor.execute('SELECT Document_Title FROM IEEETable WHERE document_title REGEXP ?',['FPGA'])
-    data['methodology'] = cursor.fetchall()
+    
+    cursor.execute('SELECT Document_Title, PDF_Link, Abstract, Publication_Year FROM IEEETable WHERE Document_Title REGEXP ? or Abstract REGEXP ?',
+                   ['virtual [environment|prototype|platform]', 'virtual [environment|prototype|platform]'])
+    data['IEEEvirtualPlatform'] = cursor.fetchall()
     
     
-#    cursor.execute('SELECT count(*) FROM IEEETable WHERE Document_Title REGEXP ?',['FPGA'])
-#    data['FPGA'] = cursor.fetchall()
-    i = 0
+    # Merged Data with Scholar + IEEE
+    cursor.execute('SELECT title, abstract, year FROM ScholarTable WHERE title REGEXP ? or abstract REGEXP ?',
+                   ['synthesis' or 'high level synthesis', 'design exploration' and 'synthesis' or 'high level synthesis' or 'HLS'])
+    data['HLS'] = cursor.fetchall()
+    
+    
+    cursor.execute('SELECT title, abstract, year FROM ScholarTable WHERE title REGEXP ? or abstract REGEXP ?',
+                   ['virtual [environment|prototype|platform]', 'virtual [environment|prototype|platform]'])
+    data['virtualPlatform'] = cursor.fetchall()
+    
+    # To look through the data
     for key, values in data.iteritems():
-        print len(values)
-        for doc in values:
-            print doc
-            i = i+1
-    print i
-
-#    regEx = 'ESA'
-
-#    cursor.execute('SELECT count(*) FROM IEEETable WHERE Document_Title REGEXP ?',['%(regEx)s' % {'regEx': regEx}])
-#    data['%(regEx)s' % {'regEx': regEx}] = cursor.fetchall()
-#    print(data)
-#    cursor.execute('SELECT Document_Title FROM IEEETable WHERE Abstract REGEXP ?',['virtual prototype'])
-#    data=cursor.fetchall()
-#    
-#    for doc in data:
-#        print doc
+        print key, len(values)
+    
+    print "\n Time Taken: %.3f sec" % (time.time()-t)
+    
     
     
 

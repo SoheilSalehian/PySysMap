@@ -3,6 +3,7 @@
 	<name>PySysMap</name>
 	<comment></comment>
 	<projects>
+		<project>PyPDF2</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
