@@ -8,6 +8,10 @@
 <path>/PySysMap/src</path>
 </pydev_pathproperty>
 <pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
-<path>/home/soheil/workspace/PyPDF2/PyPDF2</path>
+<path>/home/soheil/workspace/Mechanize/src</path>
+<path>/home/soheil/workspace/PyPDF2/src</path>
+<path>/home/soheil/workspace/requests</path>
+<path>/home/soheil/MiscGitRepos/splinter</path>
+<path>/home/soheil/MiscGitRepos/selenium-2.40.0/py</path>
 </pydev_pathproperty>
 </pydev_project>

@@ -1,16 +1,24 @@
-import urllib2
 from urllib2 import Request, urlopen
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from StringIO import StringIO
 import re
-import subprocess
+import time
+import os
+import webbrowser
+import subprocess, signal
 
+#url = "http://ieeexplore.ieee.org/xpl/articleDetails.jsp?tp=&arnumber=5247153&queryText%3Delectronic+system+level+methodologies"
+#url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf"
+#url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf?tp=&arnumber=5654090&isnumber=5648785"
 
-url = "http://www.cecs.uci.edu/~papers/date07_universitybooth/Sessions/Session1/S12.pdf"
-#url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
+url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
+#USER_AGENT = 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11'
+
 
 ## @fn pdfDownload(url)
-#  @brief This function downloads the pdf file based on a url given
+#  @brief This function downloads normal non Javascript embedded pdf file based on a url given
+#  and writes the binary version as "output.pdf"
+#  Use this function for general purpose downloading needs if embedded pdfs are not an issue.
 def pdfDownload(url):
     writer = PdfFileWriter()
     remoteFile = urlopen(Request(url)).read()
@@ -25,11 +33,31 @@ def pdfDownload(url):
     outputStream.close()
 
 
-def throughUCProxy():
-    proxy = urllib2.ProxyHandler({'http': 'http://username:ssalehia:Acdsee32!@http://ieeexplore.ieee.org.ezproxy.lib.ucalgary.ca:2048'})
-    auth = urllib2.HTTPBasicAuthHandler()
-    opener = urllib2.build_opener(proxy, auth, urllib2.HTTPHandler)
-    urllib2.install_opener(opener)
+## @fn pdfEmbeddedDownloadage(url)
+#  @brief This function downloads the embedded pdf file based on a article number given
+def pdfEmbeddedDownloadage(articleNumberList):
+    # Step through each article number
+    for articleNumber in articleNumberList:
+        # Construct the proper url
+        url = urlProvider(articleNumber)
+        # Open the browser with "save to disk" enabled
+        webbrowser.get('firefox').open_new_tab(url)
+        # Wait for the download to finish
+        time.sleep(10)
+        p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+    
+        for line in out.splitlines():
+            if 'firefox' in line:
+                pid = int(line.split(None,1)[0])
+                os.kill(pid, signal.SIGKILL)
+    
+## @fn urlProvider(articleNumber)
+#  @brief This method constructs the proper url to download
+def urlProvider(articleNumber):
+    targetURL = "http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=%(number)s&userType=inst"
+    return targetURL % {'number': articleNumber}    
+
 
 ## @fn pdfCount(pdfFilePath, patternList)
 #  @brief This function looks into a pdf file for the number of occurances of the pattern given
@@ -61,8 +89,11 @@ def pdfCount(pdfFilePath, patternList):
     # Return the dictionary that maps pattern to # of occurances 
     return patternToOccurance
     
-        
-
+    
 if __name__ == "__main__":
+    t = time.time()
     pdfDownload(url)
-    print 'The Number is: ', pdfCount('/home/soheil/workspace/PySysMap/src/output.pdf',['chippo', 'computer'])
+#    artNumList = ['5247153','6628330']
+#    pdfEmbeddedDownloadage(artNumList)
+#    print 'The Number is: ', pdfCount('/home/soheil/workspace/PySysMap/src/ESLSynthesis.pdf',['ESL', 'level synthesis', 'HLS'])
+    print "\n Time Taken: %.3f sec" % (time.time()-t)
