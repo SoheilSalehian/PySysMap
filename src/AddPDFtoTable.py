@@ -1,20 +1,19 @@
 ## @file AddPDFtoTable.py
 #  @brief A short script that puts the pdf content in the IEEE table as a new column
-
-
-import csv, sqlite3
+import csv,sqlite3
 import sys
 import time
 import PdfDownload
 import re
 import subprocess
 import RegEx
+import IEEEToSqlite
 
 connection = None
 # For first time use of the script please set these flags to be True to download pdfs and create the columns
 downloadPDF = False
 # Sqlite doesn't support if not exist column clause hence this ugly workaround
-firstColumnCreation = False
+firstColumnCreation = True
 
 pdfFileBasePath = '/home/soheil/Downloads/PySysMapPDFs/'
 
@@ -32,14 +31,11 @@ def addPDFtoDB():
             cursor.execute('ALTER TABLE IEEETable ADD PDF BLOB DEFAULT NONE;')
             cursor.fetchall()
         
-        
-    
         # Mine for the pdf links
         cursor.execute('SELECT PDF_Link FROM IEEETable;')
         pdfLinks = cursor.fetchall()
         print pdfLinks
         pdfLinks = pdfLinks[:20]
-        
         
         # If downloading for the first time
         if downloadPDF:
@@ -67,31 +63,24 @@ def addPDFtoDB():
                 subprocess.check_call(['pdftotext', pdfFilePath, textFilePath])
 
                 textFile = readTextFile(textFilePath)
-#                # Make sure the references section is seperated
+                # Make sure the references section is seperated
                 textFile = re.split('REFERENCES|References', textFile)
-#                textFile = textFile.split('REFERENCES')
+                # Find the id to be updated
                 cursor.execute('SELECT id FROM IEEETable WHERE Pdf_Link REGEXP ?',[pdfNameProvider(link[0], zeroFillFlag = 0)])
-                
                 id = cursor.fetchone()
                 print "id:", id[0]
-                cursor.execute("UPDATE IEEETable SET PDF=? WHERE id=?", (textFile,id[0]))
+                # Update the PDF column with the textFile (w/o References) based on unique key(id)
+                cursor.execute("UPDATE IEEETable SET PDF=? WHERE id=?", (textFile[0],id[0]))
                 cursor.fetchone()
             
         # Commit the results and close the connection
         connection.commit()
         connection.close()
-                
-            
         print "\n Time Taken: %.3f sec" % (time.time()-t)
         
     except sqlite3.Error, e:
         print "Error %s:" % e.args[0]
         sys.exit(1)
-
-
-
-    
-    
 
 
 def readTextFile(textFilePath):
@@ -117,4 +106,6 @@ def pdfNameProvider(pdfLink, zeroFillFlag):
 
 if __name__ == '__main__':
 #    pdfNameProvider('http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153', zeroFillFlag=1)
+    if firstColumnCreation:
+        IEEEToSqlite.IEEEToSqlite()
     addPDFtoDB()
