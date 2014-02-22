@@ -2,6 +2,7 @@ import sqlite3
 import sys
 import re
 import time
+import PdfDownload
 
 connection = None
 
@@ -50,11 +51,16 @@ try:
                    ['virtual [environment|prototype|platform]', 'virtual [environment|prototype|platform]'])
     data['virtualPlatform'] = cursor.fetchall()
     
-    # To look through the data
-    for key, values in data.iteritems():
-        print key, len(values)
+    
+    
+#    # To look through the data
+#    for key, values in data.iteritems():
+#        print key, len(values)
     
     print "\n Time Taken: %.3f sec" % (time.time()-t)
+    
+
+
     
     
     

@@ -6,12 +6,13 @@ import time
 import os
 import webbrowser
 import subprocess, signal
+import sqlite3
 
 #url = "http://ieeexplore.ieee.org/xpl/articleDetails.jsp?tp=&arnumber=5247153&queryText%3Delectronic+system+level+methodologies"
 #url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf"
 #url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf?tp=&arnumber=5654090&isnumber=5648785"
-
-url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
+url = "http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153"
+#url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
 #USER_AGENT = 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11'
 
 
@@ -34,30 +35,28 @@ def pdfDownload(url):
 
 
 ## @fn pdfEmbeddedDownloadage(url)
-#  @brief This function downloads the embedded pdf file based on a article number given
-def pdfEmbeddedDownloadage(articleNumberList):
-    # Step through each article number
-    for articleNumber in articleNumberList:
-        # Construct the proper url
-        url = urlProvider(articleNumber)
-        # Open the browser with "save to disk" enabled
-        webbrowser.get('firefox').open_new_tab(url)
-        # Wait for the download to finish
-        time.sleep(10)
-        p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
-        out, err = p.communicate()
-    
-        for line in out.splitlines():
-            if 'firefox' in line:
-                pid = int(line.split(None,1)[0])
-                os.kill(pid, signal.SIGKILL)
+#  @brief This function downloads the embedded pdf file based on a article link provided
+#  NOTE: To avoid firefox crashes, about:config into the firefox location bar -> toolkit.startup.max_resumed_crashes = -1
+def pdfEmbeddedDownloadage(articleLink):
+    # Open the browser with "save to disk" enabled
+    webbrowser.get('firefox').open_new(articleLink)
+    # Wait for the download to finish
+    time.sleep(10)
+    p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+    out, err = p.communicate()
+
+    for line in out.splitlines():
+        if 'firefox' in line:
+            pid = int(line.split(None,1)[0])
+            os.kill(pid, signal.SIGKILL)
     
 ## @fn urlProvider(articleNumber)
-#  @brief This method constructs the proper url to download
+#  @brief This method constructs the proper url to download in case it doesn't exist
 def urlProvider(articleNumber):
     targetURL = "http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=%(number)s&userType=inst"
     return targetURL % {'number': articleNumber}    
 
+     
 
 ## @fn pdfCount(pdfFilePath, patternList)
 #  @brief This function looks into a pdf file for the number of occurances of the pattern given
@@ -89,11 +88,11 @@ def pdfCount(pdfFilePath, patternList):
     # Return the dictionary that maps pattern to # of occurances 
     return patternToOccurance
     
-    
+
 if __name__ == "__main__":
     t = time.time()
-    pdfDownload(url)
-#    artNumList = ['5247153','6628330']
-#    pdfEmbeddedDownloadage(artNumList)
+#    pdfDownload(url)
+    artNumList = ['5247153','6628330']
+    pdfEmbeddedDownloadage(artNumList)
 #    print 'The Number is: ', pdfCount('/home/soheil/workspace/PySysMap/src/ESLSynthesis.pdf',['ESL', 'level synthesis', 'HLS'])
     print "\n Time Taken: %.3f sec" % (time.time()-t)
