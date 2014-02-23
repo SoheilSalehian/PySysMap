@@ -8,6 +8,7 @@ import re
 import subprocess
 import RegEx
 import IEEEToSqlite
+import PyPDF2
 
 connection = None
 # For first time use of the script please set these flags to be True to download pdfs and create the columns
@@ -35,7 +36,7 @@ def addPDFtoDB():
         cursor.execute('SELECT PDF_Link FROM IEEETable;')
         pdfLinks = cursor.fetchall()
         print pdfLinks
-        pdfLinks = pdfLinks[:20]
+        pdfLinks = pdfLinks[:21]
         
         # If downloading for the first time
         if downloadPDF:
@@ -43,6 +44,7 @@ def addPDFtoDB():
             for link in pdfLinks:
                 # Download each pdf
                 PdfDownload.pdfEmbeddedDownloadage(link[0])
+            
         
         # set the directory of the pdfs
         for link in pdfLinks:
@@ -52,26 +54,39 @@ def addPDFtoDB():
             # Call from shell to change the file to text using exception handling
             try:
                 # Try to convert the pdf file based on link article number
-                subprocess.check_call(['pdftotext', pdfFilePath, textFilePath])
+                subprocess.check_call(["pdftotext", "-q", pdfFilePath, textFilePath])
+                
     
             except subprocess.CalledProcessError:
-                # If there is need for zeropadding name
+                # If there is need for zeropadding the name
 #                print "[PySysMap] ",  "File name is missing a zero...zero appending"
                 # Do the zero padding by setting @var zeroFillFlag to 1
                 pdfFilePath = pdfFileBasePath + pdfNameProvider(link[0], zeroFillFlag = 1) + '.pdf'
-                # Convert to the 
-                subprocess.check_call(['pdftotext', pdfFilePath, textFilePath])
-
+                
+                # Convert to text again
+                subprocess.check_call(["pdftotext", "-q", pdfFilePath, textFilePath])
+                if not textFilePath:
+                    raise IOError
+                    
+                
                 textFile = readTextFile(textFilePath)
+                
+                if not textFile:
+                    return
+                
+                # TODO: Fix the reference Bug 
                 # Make sure the references section is seperated
-                textFile = re.split('REFERENCES|References', textFile)
+#                textFile = re.split('REFERENCES|References', textFile)
                 # Find the id to be updated
                 cursor.execute('SELECT id FROM IEEETable WHERE Pdf_Link REGEXP ?',[pdfNameProvider(link[0], zeroFillFlag = 0)])
                 id = cursor.fetchone()
+                if not id:
+                    print 'No id was retrieved'
+                    sys.exit()
                 print "id:", id[0]
                 # Update the PDF column with the textFile (w/o References) based on unique key(id)
-                cursor.execute("UPDATE IEEETable SET PDF=? WHERE id=?", (textFile[0],id[0]))
-                cursor.fetchone()
+                cursor.execute("UPDATE IEEETable SET PDF=? WHERE id=?", (textFile,id[0]))
+                cursor.fetchall()
             
         # Commit the results and close the connection
         connection.commit()
@@ -86,13 +101,13 @@ def addPDFtoDB():
 def readTextFile(textFilePath):
     try:
         # Open the temporary text file
-        fp = open(textFilePath, "r")
+        fp = open(textFilePath, "rb")
     # Error handling for IO
     except IOError as inst: 
         print inst 
         return
     # Read the whole file in as text and return it
-    return  fp.read()
+    return fp.read()
 
     
 
@@ -103,9 +118,23 @@ def pdfNameProvider(pdfLink, zeroFillFlag):
         return str(re.search('arnumber=(\d+)',pdfLink).group(1))    
         
 
+def getPDFContent(path):
+    content = ""
+    # Load PDF into pyPDF
+    pdf = PyPDF2.PdfFileReader(file(path, "rb"))
+    # Iterate pages
+    for i in range(0, pdf.getNumPages()):
+        # Extract text from page and add to content
+        content += pdf.getPage(i).extractText() + "\n"
+    # Collapse whitespace
+    content = " ".join(content.replace("\xa0", " ").strip().split())
+    return content
+
+
 
 if __name__ == '__main__':
-#    pdfNameProvider('http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153', zeroFillFlag=1)
+    pdfNameProvider('http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153', zeroFillFlag=1)
     if firstColumnCreation:
         IEEEToSqlite.IEEEToSqlite()
     addPDFtoDB()
+#    print getPDFContent("/home/soheil/Downloads/PySysMapPDFs/06336987.pdf")

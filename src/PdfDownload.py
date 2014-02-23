@@ -58,24 +58,29 @@ def urlProvider(articleNumber):
 
      
 
-## @fn pdfCount(pdfFilePath, patternList)
+## @fn pdfCount(pdfFilePath, patternList, dbMineFlag=False)
 #  @brief This function looks into a pdf file for the number of occurances of the pattern given
 #  Due to inconsistant behaviour of the PyPDF.extract(), this function turns the file into a text 
-#  file and then looks for the pattern.
-def pdfCount(pdfFilePath, patternList):
-    # Call from shell to change the file to text
-    subprocess.call(['pdftotext', pdfFilePath, 'output.txt'])
+#  file and then looks for the pattern. @var dbMineFlag is used to use the function to mine the pdf already in the database and not the actual PDF
+def pdfCount(patternList, fileText=None, pdfFilePath=None):
     # Dictionary for book keeping of pattern and occurance
     patternToOccurance = {}
-    try:
-        # Open the temporary text file
-        fp = open('output.txt', "r")
-    # Error handling for IO
-    except IOError as inst: 
-        print inst 
-        return
-    # Read the whole file in as text
-    fileText = fp.read()
+    if pdfFilePath:
+        # Call from shell to change the file to text
+        subprocess.call(['pdftotext', pdfFilePath, 'output.txt'])
+        try:
+            # Open the temporary text file
+            fp = open('output.txt', "r")
+        # Error handling for IO
+        except IOError as inst: 
+            print inst 
+            return
+        # Read the whole file in as text
+        fileText = fp.read()
+    else:
+        fileText = fileText
+    
+    
     for pattern in patternList:
         # Make sure the references section is seperated
         refSeperated = fileText.split('References\n[')
@@ -83,8 +88,10 @@ def pdfCount(pdfFilePath, patternList):
         reLookup = re.findall(pattern, refSeperated[0], re.IGNORECASE)
         # Store in the dictionary
         patternToOccurance[pattern]=len(reLookup)
-    # Cleanup the temporary text file
-    subprocess.call("rm output.txt", shell=True)
+    
+    if pdfFilePath:
+        # Cleanup the temporary text file
+        subprocess.call("rm output.txt", shell=True)
     # Return the dictionary that maps pattern to # of occurances 
     return patternToOccurance
     
@@ -92,7 +99,7 @@ def pdfCount(pdfFilePath, patternList):
 if __name__ == "__main__":
     t = time.time()
 #    pdfDownload(url)
-    artNumList = ['5247153','6628330']
-    pdfEmbeddedDownloadage(artNumList)
-#    print 'The Number is: ', pdfCount('/home/soheil/workspace/PySysMap/src/ESLSynthesis.pdf',['ESL', 'level synthesis', 'HLS'])
+#    artNumList = ['5247153','6628330']
+#    pdfEmbeddedDownloadage(artNumList)
+    print 'The Number is: ', pdfCount(patternList=['ESL', 'level synthesis', 'HLS'],pdfFilePath ='/home/soheil/workspace/PySysMap/src/output.pdf', fileText=None)
     print "\n Time Taken: %.3f sec" % (time.time()-t)
