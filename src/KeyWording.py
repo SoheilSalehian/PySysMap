@@ -34,7 +34,6 @@ def keyWordingDB(cursor, keyWord, threshold):
     
     dataKey = str(keyWord).replace(',', ' & ')[1:-1]
     data[dataKey] = cursor.fetchall()
-    print data
     
     # To print the keyword and number of articles found data
     for key, values in data.iteritems():
@@ -107,6 +106,7 @@ def classifyQ1(cursor):
 #    print "hw/sw", len(set(data['hardware'][0]) & set(data['software'][0]))
 #    print "hw/sys", len(set(data['hardware']) & set(data['system']))
 #    print "sw/sys", len(set(data['system']) & set(data['software']))
+    
 
     
     print "classification coverage:", (tot1+tot2+tot3)/float(695-108) 
@@ -118,26 +118,29 @@ def classifyQ2(cursor):
     tot = 0
     # TODO: Fix the total calculations without too many local vars
     # Check to see the number of tools roughly for coverage % calculation
-#    data['tools'],tot0 = keyWordingDB(cursor=cursor, keyWord=['tools|Tool|','languages|Language'], threshold=4)
+    data['tools'],tot0 = keyWordingDB(cursor=cursor, keyWord=['tools|Tool|language|framework',''], threshold=10)
     
-#    data['Matlab'],tot2=keyWordingDB(cursor=cursor, keyWord=['Matlab|Simulink',''],threshold=10)
-    data['systemC'], tot1=keyWordingDB(cursor=cursor, keyWord=['systemC','systemC'],threshold=10)
+    data['Matlab'],tot2=keyWordingDB(cursor=cursor, keyWord=['atlab|Simulink',''],threshold=10)
+    data['systemC'], tot1=keyWordingDB(cursor=cursor, keyWord=['ystemC|IEEE 1666',''],threshold=15)
 
-#    data['C++'],tot3=keyWordingDB(cursor=cursor, keyWord=['C\+\+|C language',''],threshold=8)
-#    data['TLM'],tot4=keyWordingDB(cursor=cursor, keyWord=['TLM',''],threshold=10)
-#    data['HDL'],tot5=keyWordingDB(cursor=cursor, keyWord=['VHDL|verilog',''],threshold=10)
-#    data['SV'],tot6=keyWordingDB(cursor=cursor, keyWord=['SVA|system verilog',''],threshold=10)
-#    data['ptolemy'],tot7=keyWordingDB(cursor=cursor, keyWord=['ptolemy',''],threshold=10)
-#    data['UML'],tot8=keyWordingDB(cursor=cursor, keyWord=['UML',''],threshold=10)
-#    data['SysML'],tot9=keyWordingDB(cursor=cursor, keyWord=['SysML',''],threshold=10)
-#    data['MARTE'],tot10=keyWordingDB(cursor=cursor, keyWord=['MARTE',''],threshold=10)
-#    data['Rosetta'],tot11=keyWordingDB(cursor=cursor, keyWord=['Rosetta',''],threshold=10)
-#    data['IP-XACT'],tot12=keyWordingDB(cursor=cursor, keyWord=['IP-XACT',''],threshold=10)
+    data['C/C++'],tot3=keyWordingDB(cursor=cursor, keyWord=['C\+\+',''],threshold=10)
+    data['TLM'],tot4=keyWordingDB(cursor=cursor, keyWord=['TLM','Transaction Level Modeling'],threshold=10)
+    data['HDL'],tot5=keyWordingDB(cursor=cursor, keyWord=['VHDL|verilog',''],threshold=10)
+    data['SV'],tot6=keyWordingDB(cursor=cursor, keyWord=['SVA|system verilog',''],threshold=10)
+    data['ptolemy'],tot7=keyWordingDB(cursor=cursor, keyWord=['ptolemy',''],threshold=10)
+    data['UML'],tot8=keyWordingDB(cursor=cursor, keyWord=['UML',''],threshold=10)
+    data['SysML'],tot9=keyWordingDB(cursor=cursor, keyWord=['SysML',''],threshold=10)
+    data['MARTE'],tot10=keyWordingDB(cursor=cursor, keyWord=['MARTE',''],threshold=10)
+    data['Rosetta'],tot11=keyWordingDB(cursor=cursor, keyWord=['Rosetta',''],threshold=10)
+    data['IP-XACT'],tot12=keyWordingDB(cursor=cursor, keyWord=['IP-XACT',''],threshold=10)
     
 #    # Check for duplicates to determine intersection between classes
-#    print 'hw/sw duplicates:', checkDuplicates(data['hardware'], data['software'])
-#    print 'hw/system duplicates:', checkDuplicates(data['hardware'], data['system'])
-#    print 'system/sw duplicates:', checkDuplicates(data['system'], data['software'])
+    print 'C/C++ & SystemC duplicates:', checkDuplicates(data['C/C++'], data['systemC'])
+    print 'SystemC & Matlab duplicates:', checkDuplicates(data['Matlab'], data['systemC'])
+    print 'SystemC & TLM duplicates:', checkDuplicates(data['systemC'], data['TLM'])
+    print 'SystemC & UML duplicates:', checkDuplicates(data['systemC'], data['UML'])
+    print 'SystemC & HDL duplicates:', checkDuplicates(data['systemC'], data['HDL'])
+   
     
 #    keyWordingDB(cursor=cursor, keyWord=['embedded software','automation'])
 #    keyWordingDB(cursor=cursor, keyWord= 'Computer')
@@ -145,12 +148,8 @@ def classifyQ2(cursor):
 #    print "systemC/Matlab", len(set(data['systemC']) & set(data['Matlab']))
 #    print "systemC/C++", len(set(data['C++']) & set(data['systemC']))
 #    print "Matlab/C++", len(set(data['C++']) & set(data['Matlab']))
-    tot = 0
-    for key, value in data.iteritems():
-        print key, len(value)
-        tot += int(len(value))
     
-#    print "classification coverage:", (tot1+tot2+tot3+tot4+tot5+tot6+tot7+tot8+tot9+tot10+tot11+tot12)/360.00
+    print "classification coverage:", (tot1+tot2+tot3+tot4+tot5+tot6+tot7+tot8+tot9+tot10+tot11+tot12)/float(tot0)
 
 try:
     t = time.time()
