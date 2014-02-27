@@ -6,7 +6,7 @@ import time
 import PdfDownload
 import re
 import subprocess
-import RegEx
+import KeyWording
 import IEEEToSqlite
 import PyPDF2
 
@@ -23,25 +23,27 @@ def addPDFtoDB():
         t = time.time()
         # Connect to the database
         connection = sqlite3.connect('PySysMapDB.db')
+        # Set the connection to return string (UTF-8)
         connection.text_factory = str
-        connection.create_function("REGEXP", 2, RegEx.regexp)
+        connection.create_function("REGEXP", 2, KeyWording.regexp)
         cursor = connection.cursor()
         
-        if firstColumnCreation:
-            # Add the pdf column to the IEEETable
-            cursor.execute('ALTER TABLE IEEETable ADD PDF BLOB DEFAULT NONE;')
-            cursor.fetchall()
+#        if firstColumnCreation:
+#            # Add the pdf column to the IEEETable
+#            print "Adding PDF Column to Database..."
+#            cursor.execute('ALTER TABLE IEEETable ADD PDF BLOB DEFAULT NONE;')
+#            cursor.fetchall()
         
         # Mine for the pdf links
         cursor.execute('SELECT PDF_Link FROM IEEETable;')
         pdfLinks = cursor.fetchall()
-        print pdfLinks
-        pdfLinks = pdfLinks[:21]
+        print len(pdfLinks)
         
         # If downloading for the first time
         if downloadPDF:
             # Step through each link
             for link in pdfLinks:
+                print "downloading:", link
                 # Download each pdf
                 PdfDownload.pdfEmbeddedDownloadage(link[0])
             
@@ -62,9 +64,17 @@ def addPDFtoDB():
 #                print "[PySysMap] ",  "File name is missing a zero...zero appending"
                 # Do the zero padding by setting @var zeroFillFlag to 1
                 pdfFilePath = pdfFileBasePath + pdfNameProvider(link[0], zeroFillFlag = 1) + '.pdf'
+                try:
+                    # Convert to text again
+                    subprocess.check_call(["pdftotext", "-q", pdfFilePath, textFilePath])
+                # Exception handling for uncorrectly downloaded pdfs
+                except: 
+                    PdfDownload.pdfEmbeddedDownloadage(link[0])
+                # Finally run the tex conversion again
+                finally:
+                    subprocess.check_call(["pdftotext", "-q", pdfFilePath, textFilePath])
                 
-                # Convert to text again
-                subprocess.check_call(["pdftotext", "-q", pdfFilePath, textFilePath])
+                
                 if not textFilePath:
                     raise IOError
                     
@@ -82,11 +92,11 @@ def addPDFtoDB():
                 id = cursor.fetchone()
                 if not id:
                     print 'No id was retrieved'
-                    sys.exit()
+                    sys.exit(1)
                 print "id:", id[0]
                 # Update the PDF column with the textFile (w/o References) based on unique key(id)
                 cursor.execute("UPDATE IEEETable SET PDF=? WHERE id=?", (textFile,id[0]))
-                cursor.fetchall()
+                cursor.fetchone()
             
         # Commit the results and close the connection
         connection.commit()
@@ -133,7 +143,7 @@ def getPDFContent(path):
 
 
 if __name__ == '__main__':
-    pdfNameProvider('http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153', zeroFillFlag=1)
+#    pdfNameProvider('http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153', zeroFillFlag=1)
     if firstColumnCreation:
         IEEEToSqlite.IEEEToSqlite()
     addPDFtoDB()

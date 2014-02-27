@@ -11,8 +11,8 @@ import sqlite3
 #url = "http://ieeexplore.ieee.org/xpl/articleDetails.jsp?tp=&arnumber=5247153&queryText%3Delectronic+system+level+methodologies"
 #url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf"
 #url = "http://ieeexplore.ieee.org/ielx5/5638200/5648785/05654090.pdf?tp=&arnumber=5654090&isnumber=5648785"
-url = "http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153"
-#url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
+#url = "http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5247153"
+url = "http://www.enel.ucalgary.ca/People/Norman/encm501winter2014/assignments/encm501w14assign04-complete.pdf"
 #USER_AGENT = 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11'
 
 
@@ -41,7 +41,7 @@ def pdfEmbeddedDownloadage(articleLink):
     # Open the browser with "save to disk" enabled
     webbrowser.get('firefox').open_new(articleLink)
     # Wait for the download to finish
-    time.sleep(10)
+    time.sleep(20)
     p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
     out, err = p.communicate()
 
@@ -98,8 +98,8 @@ def pdfCount(patternList, fileText=None, pdfFilePath=None):
 
 if __name__ == "__main__":
     t = time.time()
-#    pdfDownload(url)
+    pdfDownload(url)
 #    artNumList = ['5247153','6628330']
 #    pdfEmbeddedDownloadage(artNumList)
-    print 'The Number is: ', pdfCount(patternList=['ESL', 'level synthesis', 'HLS'],pdfFilePath ='/home/soheil/workspace/PySysMap/src/output.pdf', fileText=None)
+#    print 'The Number is: ', pdfCount(patternList=['ESL', 'level synthesis', 'HLS'],pdfFilePath ='/home/soheil/workspace/PySysMap/src/output.pdf', fileText=None)
     print "\n Time Taken: %.3f sec" % (time.time()-t)

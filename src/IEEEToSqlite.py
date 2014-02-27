@@ -31,7 +31,7 @@ def IEEEToSqlite():
                            MeSH_Terms BLOB,Article_Citation_Count BLOB,Patent_Citation_Count BLOB,\
                            Reference_Count BLOB,Copyright_Year BLOB,Online_Date BLOB,\
                            Date_Added_To_Xplore BLOB,Meeting_Date BLOB,Publisher BLOB,Sponsors BLOB,\
-                           Document_Identifier)''')
+                           Document_Identifier BLOB, PDF BLOB DEFAULT NONE)''')
         
     
         # Read the IEEE CSV file with the seperator ","
@@ -51,6 +51,15 @@ def IEEEToSqlite():
                             Abstract,ISSN,ISBN,EISBN,DOI,PDF_Link,Author_Keywords,IEEE_Terms,INSPEC_Controlled_Terms,INSPEC_Non_Controlled_Terms,\
                             DOE_Terms,PACS_Terms,MeSH_Terms,Article_Citation_Count,Patent_Citation_Count,Reference_Count,Copyright_Year,Online_Date,\
                             Date_Added_To_Xplore,Meeting_Date,Publisher,Sponsors,Document_Identifier))
+        
+        cursor.execute("DELETE FROM IEEETable WHERE PDF_Link like '%ebooks%'")
+        cursor.execute("DELETE FROM IEEETable WHERE PDF_Link like '%4786615%'")
+        cursor.execute("DELETE FROM IEEETable WHERE PDF_Link like '%6559094%'")
+        cursor.execute("DELETE FROM IEEETable WHERE PDF_Link like '%6387700%'")
+        cursor.execute("DELETE FROM IEEETable WHERE PDF_Link like '%4161859%'")
+        
+        
+
     
         print "\n Time Taken: %.3f sec" % (time.time()-t)
         print "im here"
@@ -66,3 +75,4 @@ def IEEEToSqlite():
             # Commit the results and close the connection
             connection.commit()
             connection.close()
+
