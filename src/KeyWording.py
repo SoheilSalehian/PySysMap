@@ -8,6 +8,7 @@ import re
 import time
 import PdfDownload
 from collections import defaultdict
+import math
 
 connection = None
 
@@ -15,10 +16,10 @@ connection = None
 #  @brief This function implements python regular expression mechanisms for sqlite3 queries
 def regexp(expr, item):
     reg = re.compile(expr)
-    return reg.search(item) is not None
+    return reg.search(item, re.IGNORECASE) is not None
 
-def generateYearTrendData(cursor, keyWord):
-    dic, tot = keyWordingDB(cursor=cursor, keyWord=keyWord)
+def generateYearTrendData(cursor, keyWord, threshold):
+    dic, tot = keyWordingDB(cursor=cursor, keyWord=keyWord, threshold=threshold)
     for year, idList in dic.iteritems():
         print year,len(idList)
 
@@ -70,11 +71,11 @@ def keyWordingDB(cursor, keyWord, threshold):
 def checkDuplicates(firstData, secondData):
     firstFullIDList = []
     secondFullIDList = []
-    for ids in firstData.values():
+    for ids in firstData[0]:
         for id in ids:
             firstFullIDList.append(id)
     
-    for ids in secondData.values():
+    for ids in secondData[0]:
         for id in ids:
             secondFullIDList.append(id)
     
@@ -90,9 +91,9 @@ def classifyQ1(cursor):
     data = {}
     tot = 0
     # IEEE Data only
-    data['hardware'], tot1=keyWordingDB(cursor=cursor, keyWord=['high level synthesis|synthesis|HLS',''],threshold=5)
-    data['software'], tot2=keyWordingDB(cursor=cursor, keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug',''],threshold=5)
-    data['system'], tot3=keyWordingDB(cursor=cursor, keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''],threshold=5)
+    data['hardware'] =keyWordingDB(cursor=cursor, keyWord=['high level synthesis|synthesis|HLS',''],threshold=5)
+    data['software'] = keyWordingDB(cursor=cursor, keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug',''],threshold=1)
+    data['system'] = keyWordingDB(cursor=cursor, keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''],threshold=5)
     
     # Check for duplicates to determine intersection between classes
     print 'hw/sw duplicates:', checkDuplicates(data['hardware'], data['software'])
@@ -118,38 +119,47 @@ def classifyQ2(cursor):
     tot = 0
     # TODO: Fix the total calculations without too many local vars
     # Check to see the number of tools roughly for coverage % calculation
-    data['tools'],tot0 = keyWordingDB(cursor=cursor, keyWord=['tools|Tool|language|framework',''], threshold=10)
-    
-    data['Matlab'],tot2=keyWordingDB(cursor=cursor, keyWord=['atlab|Simulink',''],threshold=10)
-    data['systemC'], tot1=keyWordingDB(cursor=cursor, keyWord=['ystemC|IEEE 1666',''],threshold=15)
+    data['tools']= keyWordingDB(cursor=cursor, keyWord=['tools|Tool|language|framework',''], threshold=5)
+    data['Matlab']=keyWordingDB(cursor=cursor, keyWord=['Matlab|Simulink',''],threshold=10)
+    data['systemC'] = keyWordingDB(cursor=cursor, keyWord=['SystemC|IEEE 1666|systemC',''],threshold=10)
 
-    data['C/C++'],tot3=keyWordingDB(cursor=cursor, keyWord=['C\+\+',''],threshold=10)
-    data['TLM'],tot4=keyWordingDB(cursor=cursor, keyWord=['TLM','Transaction Level Modeling'],threshold=10)
-    data['HDL'],tot5=keyWordingDB(cursor=cursor, keyWord=['VHDL|verilog',''],threshold=10)
-    data['SV'],tot6=keyWordingDB(cursor=cursor, keyWord=['SVA|system verilog',''],threshold=10)
-    data['ptolemy'],tot7=keyWordingDB(cursor=cursor, keyWord=['ptolemy',''],threshold=10)
-    data['UML'],tot8=keyWordingDB(cursor=cursor, keyWord=['UML',''],threshold=10)
-    data['SysML'],tot9=keyWordingDB(cursor=cursor, keyWord=['SysML',''],threshold=10)
-    data['MARTE'],tot10=keyWordingDB(cursor=cursor, keyWord=['MARTE',''],threshold=10)
-    data['Rosetta'],tot11=keyWordingDB(cursor=cursor, keyWord=['Rosetta',''],threshold=10)
-    data['IP-XACT'],tot12=keyWordingDB(cursor=cursor, keyWord=['IP-XACT',''],threshold=10)
+    data['C/C++'] = keyWordingDB(cursor=cursor, keyWord=['C\+\+|C language|C Language',''],threshold=10)
+#    data['C'] = keyWordingDB(cursor=cursor, keyWord=['C language|C Language',''],threshold=10)
+    data['TLM'] = keyWordingDB(cursor=cursor, keyWord=['TLM|tlm 2.0|transaction level modeling',''],threshold=10)
+    data['HDL'] = keyWordingDB(cursor=cursor, keyWord=['VHDL|verilog|SVA|system verilog|HDVL',''],threshold=10)
+    data['ptolemy'] = keyWordingDB(cursor=cursor, keyWord=['ptolemy',''],threshold=10)
+    data['UML'] = keyWordingDB(cursor=cursor, keyWord=['UML',''],threshold=10)
+    data['SysML'] = keyWordingDB(cursor=cursor, keyWord=['SysML',''],threshold=10)
+    data['MARTE'] = keyWordingDB(cursor=cursor, keyWord=['MARTE',''],threshold=1)
+    data['Rosetta'] = keyWordingDB(cursor=cursor, keyWord=['Rosetta',''],threshold=1)
+    data['IP-XACT'] = keyWordingDB(cursor=cursor, keyWord=['IP-XACT',''],threshold=1)
     
 #    # Check for duplicates to determine intersection between classes
-    print 'C/C++ & SystemC duplicates:', checkDuplicates(data['C/C++'], data['systemC'])
+    print 'C++ & SystemC duplicates:', checkDuplicates(data['C/C++'], data['systemC'])
+#    print 'C & SystemC duplicates:', checkDuplicates(data['C'], data['systemC'])
     print 'SystemC & Matlab duplicates:', checkDuplicates(data['Matlab'], data['systemC'])
     print 'SystemC & TLM duplicates:', checkDuplicates(data['systemC'], data['TLM'])
     print 'SystemC & UML duplicates:', checkDuplicates(data['systemC'], data['UML'])
     print 'SystemC & HDL duplicates:', checkDuplicates(data['systemC'], data['HDL'])
    
+    total = 0
+    for key in data.keys():
+        # Set the precision of the decimal representation to 3
+        print str(int(math.ceil(float('%.3f'%(((data[key][1])/float(data['tools'][1]))*100)))))+'/'+key+','
+        total += data[key][1]/float('%.2f'%(float(data['tools'][1])))
     
+    print "Classification Coverage:", total-1
+        
+ 
+        
 #    keyWordingDB(cursor=cursor, keyWord=['embedded software','automation'])
 #    keyWordingDB(cursor=cursor, keyWord= 'Computer')
 #    print type(data['hardware'])
 #    print "systemC/Matlab", len(set(data['systemC']) & set(data['Matlab']))
 #    print "systemC/C++", len(set(data['C++']) & set(data['systemC']))
 #    print "Matlab/C++", len(set(data['C++']) & set(data['Matlab']))
-    
-    print "classification coverage:", (tot1+tot2+tot3+tot4+tot5+tot6+tot7+tot8+tot9+tot10+tot11+tot12)/float(tot0)
+
+#    print "classification coverage:", (tot1+tot2+tot3+tot4+tot5+tot6+tot7+tot8+tot9+tot10+tot11+tot12)/float(tot0)
 
 try:
     t = time.time()
@@ -163,6 +173,9 @@ try:
     
     
     classifyQ2(cursor)
+#    generateYearTrendData(cursor,keyWord=['high level synthesis|synthesis|HLS',''], threshold=6)
+#    generateYearTrendData(cursor,keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug|software/hardware partition',''], threshold=5)
+#    generateYearTrendData(cursor,keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''], threshold=6)
 
     
 #    for year, id in dic.iteritems():
