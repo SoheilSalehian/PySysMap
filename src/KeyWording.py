@@ -92,7 +92,7 @@ def classifyQ1(cursor):
     tot = 0
     # IEEE Data only
     data['hardware'] =keyWordingDB(cursor=cursor, keyWord=['high level synthesis|synthesis|HLS',''],threshold=5)
-    data['software'] = keyWordingDB(cursor=cursor, keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug',''],threshold=1)
+    data['software'] = keyWordingDB(cursor=cursor, keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug',''],threshold=3)
     data['system'] = keyWordingDB(cursor=cursor, keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''],threshold=5)
     
     # Check for duplicates to determine intersection between classes
@@ -100,17 +100,14 @@ def classifyQ1(cursor):
     print 'hw/system duplicates:', checkDuplicates(data['hardware'], data['system'])
     print 'system/sw duplicates:', checkDuplicates(data['system'], data['software'])
 
+    total = 0
+    for key in data.keys():
+        print data[key][1]
+        # Set the precision of the decimal representation to 3
+        print str(int(math.ceil(float('%.3f'%(((data[key][1])/float(695))*100)))))+'/'+key+','
+        total += data[key][1]/float('%.2f'%(float(695)))
 #    
-#    keyWordingDB(cursor=cursor, keyWord=['embedded software','automation'])
-#    keyWordingDB(cursor=cursor, keyWord= 'Computer')
-#    print type(data['hardware'])
-#    print "hw/sw", len(set(data['hardware'][0]) & set(data['software'][0]))
-#    print "hw/sys", len(set(data['hardware']) & set(data['system']))
-#    print "sw/sys", len(set(data['system']) & set(data['software']))
-    
-
-    
-    print "classification coverage:", (tot1+tot2+tot3)/float(695-108) 
+    print "Classification Coverage:", total
     
 ## @fn classifyQ2(cursor)
 #  @brief This functions makes the classifcation for Q1 and reports results
@@ -150,16 +147,29 @@ def classifyQ2(cursor):
     
     print "Classification Coverage:", total-1
         
- 
-        
-#    keyWordingDB(cursor=cursor, keyWord=['embedded software','automation'])
-#    keyWordingDB(cursor=cursor, keyWord= 'Computer')
-#    print type(data['hardware'])
-#    print "systemC/Matlab", len(set(data['systemC']) & set(data['Matlab']))
-#    print "systemC/C++", len(set(data['C++']) & set(data['systemC']))
-#    print "Matlab/C++", len(set(data['C++']) & set(data['Matlab']))
+## @fn classifyAgile(cursor)
+#  @brief This functions makes the classifcation for agile and reports results
+def classifyAgile(cursor):
+    data = {}
+    tot = 0
+    # IEEE Data only
+    data['agile'] =keyWordingDB(cursor=cursor, keyWord=['agile |scrum|TDD|XPI',''],threshold=10)
+#    data['software'] = keyWordingDB(cursor=cursor, keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug',''],threshold=3)
+#    data['system'] = keyWordingDB(cursor=cursor, keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''],threshold=5)
+#    
+#    # Check for duplicates to determine intersection between classes
+#    print 'hw/sw duplicates:', checkDuplicates(data['hardware'], data['software'])
+#    print 'hw/system duplicates:', checkDuplicates(data['hardware'], data['system'])
+#    print 'system/sw duplicates:', checkDuplicates(data['system'], data['software'])
 
-#    print "classification coverage:", (tot1+tot2+tot3+tot4+tot5+tot6+tot7+tot8+tot9+tot10+tot11+tot12)/float(tot0)
+#    total = 0
+    for key, values in data.iteritems():
+        print values[0]
+#        # Set the precision of the decimal representation to 3
+#        print str(int(math.ceil(float('%.3f'%(((data[key][1])/float(695))*100)))))+'/'+key+','
+#        total += data[key][1]/float('%.2f'%(float(695)))
+##    
+#    print "Classification Coverage:", total
 
 try:
     t = time.time()
@@ -172,11 +182,11 @@ try:
     cursor = connection.cursor()
     
     
-    classifyQ2(cursor)
+#    classifyQ1(cursor)
 #    generateYearTrendData(cursor,keyWord=['high level synthesis|synthesis|HLS',''], threshold=6)
 #    generateYearTrendData(cursor,keyWord=['virtual prototype|embedded software|virtual platform|driver|software debug|software/hardware partition',''], threshold=5)
 #    generateYearTrendData(cursor,keyWord=['design exploration|system designer|optimization|behavioral model|partition point',''], threshold=6)
-
+    classifyAgile(cursor)
     
 #    for year, id in dic.iteritems():
 #        print "year", year, "num", id

@@ -1,6 +1,5 @@
-## @file CSVtoSqlite
-#  @brief A short script that creates the table in the sqlite database based on
-#         the input csv data file.
+## @file IEEEtoSqlite.py
+#  @brief A short script that creates the table in the sqlite database based on the input csv data file.
 #  Please be aware that the file overwrites the table in case it existed already.
 
 import csv, sqlite3
@@ -75,4 +74,3 @@ def IEEEToSqlite():
             # Commit the results and close the connection
             connection.commit()
             connection.close()
-
